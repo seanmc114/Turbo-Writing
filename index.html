@@ -3,59 +3,88 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Escritura Tower — JC/LC Spanish Writing Game</title>
+  <title>Escritura Tower — JC/LC Writing Trainer</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="bg"></div>
+  <!-- Bright crest watermark "hug" -->
+  <div class="hug-watermark" aria-hidden="true"></div>
 
   <header class="topbar">
     <div class="brand">
-      <div class="logo">✍️</div>
+      <div class="logo">📝</div>
       <div>
         <h1>Escritura Tower</h1>
-        <p class="sub">JC / LC Spanish writing — game modes, timers, checklists, quick scoring + export.</p>
+        <p class="sub">JC / LC Spanish Writing Trainer — self-correcting, levelled, score history.</p>
       </div>
     </div>
 
     <div class="top-actions">
-      <button class="btn ghost" id="btnHistory" title="See saved attempts">History</button>
-      <button class="btn ghost" id="btnImport" title="Import your own question sets (JSON)">Import</button>
-      <button class="btn ghost" id="btnSettings" title="Settings">Settings</button>
+      <div class="student-wrap">
+        <span class="tiny">Student</span>
+        <input id="studentName" class="input small" placeholder="e.g., Aoife" />
+      </div>
+      <button class="btn ghost" id="btnProgress">Progress</button>
+      <button class="btn ghost" id="btnSettings">Settings</button>
     </div>
   </header>
 
   <main class="wrap">
-
     <!-- HOME -->
     <section id="screenHome" class="screen active">
       <div class="panel">
         <div class="panel-head">
           <h2>Choose a mode</h2>
           <p class="muted">
-            Designed around SEC-style tasks (JC Writing scoring + LC Section C writing types). :contentReference[oaicite:1]{index=1}
+            Each level = 10 short writing items (sentences/lines). Instant correction + score + best score saved.
           </p>
         </div>
 
-        <div id="tileGrid" class="grid"></div>
+        <div id="modeTiles" class="grid"></div>
 
         <div class="panel-foot">
           <div class="note">
-            <strong>Teacher tip for Monday:</strong> pick one mode, do <em>1 timed attempt</em>, then score with the quick rubric.
-            Export results as CSV for your tracking.
+            <strong>How it works:</strong> You type Spanish. It marks instantly. You see the right answer and try again.
+            Unlock harder levels by scoring well (defaults: 70%+).
           </div>
         </div>
       </div>
 
       <div class="panel slim">
-        <h3>Quick start</h3>
+        <h3>Monday-ready routine</h3>
         <ol class="steps">
-          <li>Pick a mode.</li>
-          <li>Set a time (default is already exam-friendly).</li>
-          <li>Students write → submit.</li>
-          <li>Use the checklist + quick score.</li>
-          <li>Save + export CSV.</li>
+          <li>Do 1 level as a “writing warm-up” (8–12 mins).</li>
+          <li>Students aim to beat their own best score.</li>
+          <li>Repeat weekly with new levels → track improvement.</li>
         </ol>
+        <div class="tiny muted">Tip: keep it fun by treating scores like “personal best” not a test.</div>
+      </div>
+    </section>
+
+    <!-- LEVELS -->
+    <section id="screenLevels" class="screen">
+      <div class="panel">
+        <div class="panel-head levels-head">
+          <div>
+            <h2 id="levelsTitle">Mode</h2>
+            <p class="muted" id="levelsDesc">Pick a level. Locked levels unlock with your best score.</p>
+          </div>
+          <div class="top-actions">
+            <button class="btn ghost" id="btnLevelsBack">Back</button>
+          </div>
+        </div>
+
+        <div id="levelGrid" class="levels-grid"></div>
+      </div>
+
+      <div class="panel slim">
+        <h3>Marking rules (fair + consistent)</h3>
+        <ul class="bullets">
+          <li>Capitals ignored.</li>
+          <li>Extra spaces ignored.</li>
+          <li><strong>Accents matter</strong> (áéíóú), but <strong>ñ counts as n</strong> for marking.</li>
+          <li>Small punctuation differences won’t fail you.</li>
+        </ul>
       </div>
     </section>
 
@@ -64,8 +93,8 @@
       <div class="panel">
         <div class="panel-head play-head">
           <div>
-            <h2 id="playModeTitle">Mode</h2>
-            <p class="muted" id="playModeHelp">Instructions</p>
+            <h2 id="playTitle">Level</h2>
+            <p class="muted" id="playSub">Write the Spanish. Hit Submit to get instant correction.</p>
           </div>
 
           <div class="hud">
@@ -74,12 +103,12 @@
               <span class="hud-value" id="timer">00:00</span>
             </div>
             <div class="hud-item">
-              <span class="hud-label">Words</span>
-              <span class="hud-value" id="wordCount">0</span>
+              <span class="hud-label">Score</span>
+              <span class="hud-value" id="liveScore">0/10</span>
             </div>
             <div class="hud-item">
-              <span class="hud-label">Student</span>
-              <input id="studentName" class="input small" placeholder="Optional name" />
+              <span class="hud-label">Item</span>
+              <span class="hud-value" id="itemIdx">1/10</span>
             </div>
           </div>
         </div>
@@ -88,92 +117,103 @@
           <div class="prompt-top">
             <h3 id="promptTitle">Prompt</h3>
             <div class="prompt-actions">
-              <button class="btn ghost" id="btnNewPrompt">New prompt</button>
-              <button class="btn ghost" id="btnCopyPrompt">Copy prompt</button>
+              <button class="btn ghost" id="btnHint">Hint</button>
+              <button class="btn ghost" id="btnGiveUp">Show answer</button>
             </div>
           </div>
           <div id="promptBody" class="prompt-body"></div>
         </div>
 
-        <div id="inputsArea" class="inputs"></div>
+        <div class="inputs">
+          <textarea id="answerBox" class="textarea" placeholder="Type your Spanish here…"></textarea>
+          <div class="row">
+            <button class="btn" id="btnSubmit">Submit</button>
+            <button class="btn ghost" id="btnNext" disabled>Next</button>
+            <button class="btn ghost" id="btnQuit">Quit</button>
+          </div>
+          <div id="feedback" class="feedback"></div>
+        </div>
 
-        <div class="controls">
-          <div class="left">
-            <button class="btn ghost" id="btnBackHome">Back</button>
-          </div>
-          <div class="right">
-            <button class="btn" id="btnStart">Start</button>
-            <button class="btn warn" id="btnFinish" disabled>Finish</button>
-          </div>
+        <div class="panel-foot">
+          <div class="tiny muted" id="accentNote">Accents matter here — train the habit. (ñ counts as n for marking.)</div>
         </div>
       </div>
 
       <div class="panel slim">
-        <h3>Checklist (auto)</h3>
-        <p class="muted">Not “marking” — just nudges. Great for habits: connectives, opinions, time phrases, questions, accents.</p>
-        <div id="liveChecklist" class="checklist"></div>
+        <h3>Streak & habits</h3>
+        <div class="stats">
+          <div class="stat"><span class="k">Correct</span><span class="v" id="statCorrect">0</span></div>
+          <div class="stat"><span class="k">Wrong</span><span class="v" id="statWrong">0</span></div>
+          <div class="stat"><span class="k">Streak</span><span class="v" id="statStreak">0</span></div>
+        </div>
+
+        <div class="divider"></div>
+        <h3>Mini-checklist</h3>
+        <div class="tiny muted">Good writing = verbs + connectors + opinion + time phrases.</div>
+        <div id="miniChecklist" class="checklist"></div>
       </div>
     </section>
 
     <!-- RESULTS -->
     <section id="screenResults" class="screen">
       <div class="panel">
-        <div class="panel-head">
-          <h2>Results</h2>
-          <p class="muted">Quick score + save. Export from History anytime.</p>
+        <div class="panel-head results-head">
+          <div>
+            <h2>Results</h2>
+            <p class="muted" id="resultsSummary">Score summary</p>
+          </div>
+          <div class="top-actions">
+            <button class="btn ghost" id="btnResultsHome">Home</button>
+            <button class="btn" id="btnRetry">Try again</button>
+          </div>
         </div>
 
         <div class="results-grid">
           <div class="result-card">
-            <h3>Auto checks</h3>
-            <div id="resultsChecklist" class="checklist big"></div>
-          </div>
+            <h3>Your score</h3>
+            <div class="big-score" id="finalScore">0/10</div>
+            <div class="tiny muted" id="bestScoreLine">Best: —</div>
 
-          <div class="result-card">
-            <h3>Quick scoring</h3>
-            <div id="scoringArea"></div>
             <div class="divider"></div>
-            <button class="btn" id="btnSave">Save attempt</button>
-            <button class="btn ghost" id="btnPlayAgain">Play again</button>
-            <button class="btn ghost" id="btnHomeFromResults">Home</button>
+            <div class="note">
+              <strong>Goal:</strong> beat your own best score.
+              That’s how you improve in writing without stress.
+            </div>
           </div>
 
           <div class="result-card">
-            <h3>Your text</h3>
-            <textarea id="finalText" class="textarea" readonly></textarea>
-            <div class="tiny muted">Tip: copy/paste into your correction workflow if you want.</div>
+            <h3>Corrections</h3>
+            <div id="corrections" class="corrections"></div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- HISTORY -->
-    <section id="screenHistory" class="screen">
+    <!-- PROGRESS -->
+    <section id="screenProgress" class="screen">
       <div class="panel">
-        <div class="panel-head history-head">
+        <div class="panel-head levels-head">
           <div>
-            <h2>History</h2>
-            <p class="muted">Saved attempts live in this browser (localStorage). Export CSV for your records.</p>
+            <h2>Progress</h2>
+            <p class="muted">Your best scores and recent attempts are saved on this device.</p>
           </div>
           <div class="top-actions">
+            <button class="btn ghost" id="btnProgressBack">Back</button>
             <button class="btn ghost" id="btnExport">Export CSV</button>
             <button class="btn danger" id="btnClear">Clear</button>
-            <button class="btn ghost" id="btnBackFromHistory">Back</button>
           </div>
         </div>
 
         <div class="table-wrap">
-          <table class="table" id="historyTable">
+          <table class="table" id="progressTable">
             <thead>
               <tr>
                 <th>Date</th>
                 <th>Student</th>
                 <th>Mode</th>
-                <th>Prompt</th>
-                <th>Time</th>
-                <th>Words</th>
-                <th>Attempt</th>
+                <th>Level</th>
                 <th>Score</th>
+                <th>Time</th>
               </tr>
             </thead>
             <tbody></tbody>
@@ -181,77 +221,44 @@
         </div>
 
         <div class="panel-foot">
-          <div class="note">
-            <strong>Control-test friendly:</strong> Run the same mode weekly, export CSV, and you’ve got your improvement curve.
+          <div class="tiny muted">
+            If students share devices, use the Student name box at the top. (Best scores are per-student.)
           </div>
         </div>
+      </div>
+
+      <div class="panel slim">
+        <h3>Keep it fun</h3>
+        <ul class="bullets">
+          <li>1 level = 10 sentences/lines.</li>
+          <li>Do it as a 10-minute “writing sprint”.</li>
+          <li>Scores are personal bests.</li>
+        </ul>
       </div>
     </section>
   </main>
 
-  <!-- MODAL: IMPORT -->
-  <dialog id="importDialog" class="modal">
-    <form method="dialog" class="modal-inner">
-      <h3>Import question set (JSON)</h3>
-      <p class="muted">
-        Because SEC papers are copyrighted, this game ships with original “exam-style” prompts.
-        You can import your own genuine prompts here.
-      </p>
-
-      <textarea id="importText" class="textarea" placeholder='Paste JSON here...'></textarea>
-
-      <div class="modal-actions">
-        <button class="btn ghost" value="cancel">Cancel</button>
-        <button class="btn" id="btnDoImport" value="ok">Import</button>
-      </div>
-
-      <details class="details">
-        <summary>JSON format example</summary>
-        <pre class="code">
-{
-  "sets": [
-    {
-      "modeId": "LC_H_LETTER",
-      "items": [
-        {
-          "id": "LC_REAL_2024_Q1B",
-          "title": "Letter/Email task",
-          "intro": "Write a LETTER/EMAIL...",
-          "points": ["Point 1", "Point 2", "Point 3", "Point 4", "Point 5", "Point 6", "Point 7", "Point 8"],
-          "choose": { "min": 5, "max": 5 }
-        }
-      ]
-    }
-  ]
-}
-        </pre>
-      </details>
-    </form>
-  </dialog>
-
-  <!-- MODAL: SETTINGS -->
+  <!-- SETTINGS -->
   <dialog id="settingsDialog" class="modal">
     <form method="dialog" class="modal-inner">
       <h3>Settings</h3>
 
       <label class="field">
-        <span class="label">Default timer (minutes)</span>
-        <input id="defaultMinutes" type="number" min="1" max="60" class="input" />
+        <span class="label">Crest image filename (put it in the repo)</span>
+        <input id="crestPath" class="input" placeholder="crest.png" />
+        <span class="tiny muted">Example: upload your crest as <strong>crest.png</strong> in the same folder as index.html.</span>
       </label>
 
       <label class="field">
-        <span class="label">Background watermark image (optional)</span>
-        <input id="crestPath" class="input" placeholder="e.g. crest.png (put it in repo root)" />
-        <span class="tiny muted">If you add your Synge Street crest image to the repo, set it here.</span>
+        <span class="label">Watermark strength</span>
+        <input id="crestOpacity" class="input" type="number" min="0.05" max="0.40" step="0.01" />
+        <span class="tiny muted">Try 0.18–0.26 for a bright “hug”.</span>
       </label>
 
-      <div class="modal-actions">
-        <button class="btn ghost" value="cancel">Cancel</button>
-        <button class="btn" id="btnSaveSettings" value="ok">Save</button>
-      </div>
-    </form>
-  </dialog>
+      <label class="field">
+        <span class="label">Unlock threshold (percentage)</span>
+        <input id="unlockPct" class="input" type="number" min="50" max="100" step="5" />
+      </label>
 
-  <script src="script.js"></script>
-</body>
-</html>
+      <label class="field">
+        <span class="label">Default timer p
